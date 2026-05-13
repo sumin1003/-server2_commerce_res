@@ -24,7 +24,7 @@ exports.requestEventApproval = async (eventData) => {
     }
 
     /**
-     * 🌟 3. [추가] 이미지 데이터 정제
+     * 3. 이미지 데이터 정제
      * 클라이언트가 보낸 images가 배열인지 확인하고, 
      * 레포지토리가 원하는 { url, type } 형태로 가공해서 넘김
      */
@@ -38,7 +38,7 @@ exports.requestEventApproval = async (eventData) => {
     // 4. 모든 정제된 데이터를 레포지토리로 전달
     return await eventRepository.createEventRequest({
         ...eventData,
-        images: images,      // 🌟 가공된 이미지 배열 추가
+        images: images,
         member_id: memberId,
         lat: coords.lat,
         lng: coords.lng
@@ -53,7 +53,7 @@ exports.warmupAllEventsToRedis = async () => {
     try {
         await redis.flushAll(); 
         
-        // 🌟 is_standing 정보를 함께 가져와서 나중에 좌석 선택 로직에서 활용 가능하게 함
+        // is_standing 정보를 함께 가져와서 나중에 좌석 선택 로직에서 활용 가능하게 함
         const events = await prisma.events.findMany({
             where: { approval_status: 'CONFIRMED' },
             select: { event_id: true, available_seats: true, is_standing: true }
@@ -64,7 +64,7 @@ exports.warmupAllEventsToRedis = async () => {
             const infoKey = `event:info:${event.event_id}`;
             
             await redis.set(stockKey, event.available_seats);
-            // 🌟 부가 정보(스탠딩 여부 등)도 캐싱해두면 예매 시 속도가 비약적으로 빨라짐
+            // 부가 정보(스탠딩 여부 등)도 캐싱해두면 예매 시 속도가 비약적으로 빨라짐
             await redis.set(infoKey, JSON.stringify({ isStanding: event.is_standing }));
         }
 
@@ -151,7 +151,7 @@ exports.processAdminResponse = async (response) => {
 
     if (!incomingEventId) throw new Error("공연 ID(eventId)가 전달되지 않았음");
 
-    // 2. 🔍 역추적: event_id가 5번이면서 대기 중인 승인 요청서를 DB에서 찾음
+    // 2. 역추적: event_id가 5번이면서 대기 중인 승인 요청서를 DB에서 찾음
     const approvalReq = await prisma.event_approvals.findFirst({
         where: { 
             event_id: Number(incomingEventId),
@@ -161,7 +161,7 @@ exports.processAdminResponse = async (response) => {
 
     if (!approvalReq) throw new Error(`공연 ID ${incomingEventId}에 해당하는 대기 건이 없음`);
 
-    // 🌟 진짜 필요한 ID들을 여기서 확정
+    // 진짜 필요한 ID들을 여기서 확정
     const realApprovalId = approvalReq.approval_id; // 승인 테이블의 PK
     const actualEventId = approvalReq.event_id;     // 공연 테이블의 PK
     const snapshot = approvalReq.event_snapshot; 
@@ -184,9 +184,9 @@ exports.processAdminResponse = async (response) => {
                 data: {
                     approval_status: 'CONFIRMED',
                     approval_id: realApprovalId, // 외래키로 연결
-                    // 핵심 주석: 관리자 DTO의 eventStartDate(예매시작) -> 내 DB의 open_time에 저장
+                    // 관리자 DTO의 eventStartDate(예매시작) -> 내 DB의 open_time에 저장
                     open_time: eventStartDate ? new Date(eventStartDate) : new Date(snapshot.open_time), 
-                    // 핵심 주석: 관리자 DTO의 eventEndDate(예매종료) -> 내 DB의 close_time에 저장
+                    // 관리자 DTO의 eventEndDate(예매종료) -> 내 DB의 close_time에 저장
                     close_time: eventEndDate ? new Date(eventEndDate) : new Date(snapshot.close_time),
                     artist_name: artistName || snapshot.artist_name,
                     age_limit: snapshot.age_limit || 0,
@@ -197,7 +197,7 @@ exports.processAdminResponse = async (response) => {
                 }
             });
 
-            // 🌟 [자동화 로직 수정] 자체 공연장(루미나 시리즈) 특별 수수료율 분기 처리
+            // 자체 공연장(루미나 시리즈) 특별 수수료율 분기 처리
             const venueName = snapshot.venue || updatedEvent.venue; // 스냅샷이나 이벤트 정보에서 공연장 이름 가져옴
             let appliedPolicy;
 
@@ -229,7 +229,7 @@ exports.processAdminResponse = async (response) => {
         }
     });
 
-    // 3. Redis 동기화 (기존 동일)
+    // 3. Redis 동기화
     if (status === 'CONFIRMED' && result) {
         const stockKey = `event:stock:${actualEventId}`;
         const infoKey = `event:info:${actualEventId}`;
@@ -248,7 +248,7 @@ exports.requestEvent = async (eventData) => {
         // 1. 비즈니스 로직 처리 (예: 유효성 검사 등)
         if (!eventData.title) throw new Error("제목이 없어!");
 
-        // 2. 🌟 Repository에게 DB 저장 시키기
+        // 2. Repository에게 DB 저장 시키기
         const savedEvent = await eventRepository.save(eventData);
         
         return { success: true, data: savedEvent };
