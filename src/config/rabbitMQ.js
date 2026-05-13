@@ -4,7 +4,7 @@ require('dotenv').config();
 let connection = null; 
 let channel = null;    
  
-// 🌟 Java 서버(Admin) 상수와 100% 일치
+// Java 서버(Admin) 상수와 100% 일치
 const QUEUES = {
     RESERVATION: 'reservation.queue',
     STATUS_UPDATE: 'res.status.update.queue',
@@ -88,7 +88,7 @@ const publishToQueue = async (routingKey, message) => {
         throw new Error("🚀 RabbitMQ 내부 버퍼가 가득 차서 전송에 실패했습니다.");
     }
 
-    // 🌟 네가 말한 try-catch 살려냈어! 전송 확정 대기
+    // 전송 확정 대기
     try {
         await channel.waitForConfirms();
     } catch (err) {
