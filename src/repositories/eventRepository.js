@@ -52,7 +52,7 @@ exports.findArtistEvents = async (artistId) => {
         include: {
             event_locations: true,
             event_images: true,
-            // 🌟 반려 사유를 가져오기 위해 이 부분을 추가해!
+            // 반려 사유를 가져오기 위해
             event_approvals_events_approval_idToevent_approvals: {
                 select: {
                     rejection_reason: true
@@ -62,7 +62,7 @@ exports.findArtistEvents = async (artistId) => {
                 where: { status: 'CONFIRMED' },
                 select: { 
                     ticket_count: true, 
-                    selected_seats: true // 🌟 실제 DB 컬럼명으로 수정!
+                    selected_seats: true
                 }
             }
         },
@@ -70,7 +70,7 @@ exports.findArtistEvents = async (artistId) => {
     });
 };
 
-// [5] 🌟 새로운 공연 등록 (파일/URL 둘 다 대응)
+// [5] 새로운 공연 등록 (파일/URL 둘 다 대응)
 exports.createEventRequest = async (data) => {
     return await prisma.$transaction(async (tx) => {
         // BigInt 안전 변환
@@ -117,13 +117,13 @@ exports.createEventRequest = async (data) => {
             });
         }
 
-        // 4. event_approvals (🌟 필수 Json 필드 snapshot 추가)
+        // 4. event_approvals ( 필수 Json 필드 snapshot 추가)
         await tx.event_approvals.create({
             data: {
                 event_id: newEvent.event_id,
                 requester_id: requesterId,
                 status: 'PENDING',
-                event_snapshot: { title: data.title, price: data.price, venue: data.venue } // 🌟 필수!
+                event_snapshot: { title: data.title, price: data.price, venue: data.venue } // 필수
             }
         });
 
@@ -139,7 +139,7 @@ exports.confirmEvent = async (tx, eventId, adminId) => {
         where: { event_id: Number(eventId) },
         data: { 
             status: 'CONFIRMED', 
-            // 💡 [방어 코드] admin_id가 undefined/null인 경우 BigInt 에러 방지
+            // [방어 코드] admin_id가 undefined/null인 경우 BigInt 에러 방지
             admin_id: (adminId !== undefined && adminId !== null) ? BigInt(adminId) : null,
             processed_at: new Date()
         }
@@ -160,7 +160,7 @@ exports.rejectEvent = async (tx, eventId, adminId, reason) => {
         data: { 
             status: 'FAILED', 
             rejection_reason: reason,
-            // 💡 [방어 코드] admin_id 안전하게 처리
+            // [방어 코드] admin_id 안전하게 처리
             admin_id: (adminId !== undefined && adminId !== null) ? BigInt(adminId) : null,
             processed_at: new Date()
         }
