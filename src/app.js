@@ -25,7 +25,7 @@ app.use(express.json()); // [파싱] HTTP 요청 바디의 JSON 데이터를 JS 
 app.use(express.urlencoded({ extended: true })); // [파싱] 폼 데이터 등 URL 인코딩된 바디를 해석함
 
 
-//  🌟 [핵심 수정] 정적 파일 제공 경로 동적 매핑
+//  정적 파일 제공 경로 동적 매핑
 //  저장할 때(resRoutes.js)와 동일하게, 환경에 따라 실제 파일이 있는 폴더를 바라보게 함
 const staticPath = process.platform === 'win32' 
     ? path.join(process.cwd(), 'uploads') 
@@ -34,7 +34,7 @@ const staticPath = process.platform === 'win32'
 app.use('/images/res', express.static(staticPath));
 
 /**
- * [4] 라우터 연결 (🚨 404 발생 주의 구역)
+ * [4] 라우터 연결 ( 404 발생 주의 구역)
  * Nginx 환경을 고려하여 루트('/') 경로에 예약을 처리하는 모든 라우터를 매핑함.
  * 만약 테스트 코드가 'http://localhost:8082/api/res'를 찌르고 있다면, 
  * 여기서 '/'로 매핑했기 때문에 경로 불일치로 404가 발생할 수 있음.
@@ -103,9 +103,9 @@ app.listen(PORT, async () => {
         await startConsumer(); 
         await startCancelConsumer();
         await startStatusUpdateConsumer();
-        // 🌟 공연 승인 결과 처리 컨슈머 실행
+        // 공연 승인 결과 처리 컨슈머 실행
         await startEventResponseConsumer();
-        // 🌟 [추가] 환불 승인 결과 처리 컨슈머 실행
+        // 환불 승인 결과 처리 컨슈머 실행
         await startRefundResponseConsumer();
         // 대시보드 컨슈머 시작
         await startDashboardConsumer();
