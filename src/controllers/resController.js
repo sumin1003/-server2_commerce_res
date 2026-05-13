@@ -7,7 +7,7 @@ const prisma = require('../config/prisma');
 const resRepository = require('../repositories/resRepository');
 
 // =========================================================================
-// [1] 예매 생성 (🚀 예약 도메인의 핵심 로직)
+// [1] 예매 생성 (예약 도메인의 핵심 로직)
 // =========================================================================
 // 목적: 프론트엔드에서 결제 직전 '예매하기' 버튼을 눌렀을 때 호출되는 API.
 // 흐름: 데이터 수집 -> 보안 검사 -> Redis/DB 가저장 -> RabbitMQ로 결제 서버에 메시지 발송
@@ -16,7 +16,7 @@ exports.createReservation = async (req, res) => {
     const { event_id, ticket_count, selected_seats } = req.body;
 
     /**
-     * 🌟 게이트웨이(OpenResty) 보안 연동
+     * 게이트웨이(OpenResty) 보안 연동
      * 게이트웨이가 JWT를 검증한 후 'x-user-id' 헤더에 memberId를 넣어주므로
      * 프론트에서 보내는 member_id나 Authorization 헤더를 직접 파싱할 필요가 없음!
      * (마이크로서비스 아키텍처의 전형적인 인증 위임 방식)
@@ -122,7 +122,7 @@ exports.requestRefund = async (req, res) => {
         const refundRequestData = await resService.prepareRefundAdminRequest(ticket_code, member_id, refund_reason);
 
         /**
-         * 🌟 Java AdminRefundRequestDTO 규격에 100% 맞춤
+         * Java AdminRefundRequestDTO 규격에 100% 맞춤
          * 타 언어(Java) 서버와 통신하기 위해 합의된 JSON 스키마로 페이로드 조립.
          */
         const adminMessagePayload = {
@@ -169,8 +169,8 @@ exports.requestRefund = async (req, res) => {
 // 목적: 마이페이지에 들어갔을 때 본인이 예매한 티켓 리스트를 보여줌.
 exports.getMyReservations = async (req, res) => {
     try {
-        // 🌟 수정: URL 파라미터(:memberId) 대신 게이트웨이 헤더 사용
-        // 이렇게 하면 주소창에 남의 ID를 쳐도 자기 것만 나옴! (보안 강화)
+        // URL 파라미터(:memberId) 대신 게이트웨이 헤더 사용
+        // 이렇게 하면 주소창에 남의 ID를 쳐도 자기 것만 나옴 (보안 강화)
         const memberId = req.headers['x-user-id'];
 
         // memberId가 아예 안 들어왔을 경우만 체크
