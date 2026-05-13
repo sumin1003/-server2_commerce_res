@@ -16,7 +16,7 @@ const redis = require('../config/redisClient');
  * -------------------------------------------------------------------------
  */
 exports.validateAndPrepare = async (eventId, count, memberId) => {
-    // 🌟 수량 제한 로직: 어뷰징 및 사재기를 막기 위해 1인당 최대 구매 수량을 2매로 제한
+    // 수량 제한 로직: 어뷰징 및 사재기를 막기 위해 1인당 최대 구매 수량을 2매로 제한
     if (count > 2) {
         throw { status: 400, message: "티켓은 1인당 최대 2매까지만 예매 가능합니다." };
     }
@@ -68,7 +68,7 @@ exports.validateAndPrepare = async (eventId, count, memberId) => {
         const event = await eventRepository.findEventById(eventId);
         if (!event) throw { status: 404, message: "공연 정보를 찾을 수 없습니다." };
         
-        // 🌟 [수수료 정책 조회] 결제 서버에 넘겨주기 위해 DB에서 아티스트 판매 수수료율 조회
+        // [수수료 정책 조회] 결제 서버에 넘겨주기 위해 DB에서 아티스트 판매 수수료율 조회
         const feePolicy = await eventRepository.getFeePolicy(eventId);
         const salesCommissionRate = feePolicy ? feePolicy.sales_commission_rate : 0; // 정책 누락 방지
 
@@ -161,7 +161,7 @@ exports.makeReservation = async (resData, memberId) => {
 
     /**
      * [결과 직렬화]
-     * Prisma ORM의 BigInt 타입은 기본적으로 JSON.stringify 시 에러가 나므로,
+     * Prisma ORM의 BigInt 타입은 기본적으로 JSON.stringify 시 에러가 나므로
      * 프론트엔드로 안전하게 응답하기 위해 문자열(String)로 변환해 줌.
      */
     return JSON.parse(JSON.stringify(dbResult, (key, value) => 
@@ -206,7 +206,7 @@ exports.processRefund = async (ticketCode, memberId) => {
         throw { status: 400, message: "이미 환불되거나 취소된 티켓입니다." };
     }
 
-    // 🌟 [환불 정산 취소 데이터 준비] 관리자/결제 서버에 넘길 원본 공연 가격 및 수수료율 조회
+    // [환불 정산 취소 데이터 준비] 관리자/결제 서버에 넘길 원본 공연 가격 및 수수료율 조회
     const event = await eventRepository.findEventById(reservation.event_id);
     const feePolicy = await eventRepository.getFeePolicy(reservation.event_id);
     const salesCommissionRate = feePolicy ? feePolicy.sales_commission_rate : 0;
@@ -233,7 +233,7 @@ exports.processRefund = async (ticketCode, memberId) => {
  * =========================================================================
  * 목적: 사용자가 환불 요청 시 즉시 취소하지 않고, 관리자 승인 대기 상태(PENDING)로 
  * DB에 기록한 후 큐(Queue) 전송용 데이터를 구성함.
- * 🌟 에러 수정: 커넥션 풀 누수를 막기 위해 new PrismaClient()를 제거하고 전용 Repository 함수를 사용.
+ * 커넥션 풀 누수를 막기 위해 new PrismaClient()를 제거하고 전용 Repository 함수를 사용.
  * -------------------------------------------------------------------------
  */
 exports.prepareRefundAdminRequest = async (ticketCode, memberId, refundReason) => {
@@ -289,13 +289,13 @@ exports.getMyReservations = async (memberId) => {
         status: res.status,
         ticket_count: res.ticket_count,
         pure_price: res.total_price - res.booking_fee, // 수수료 제외 순수 금액
-        // 🌟 스냅샷에 있던 좌석 정보도 필요하면 포함
+        // 스냅샷에 있던 좌석 정보도 필요하면 포함
         selected_seats: res.selected_seats, 
         events: {
             title: res.events.title,
             artist_name: res.events.artist_name, 
             event_date: res.events.event_date,
-            // 🌟 b.events.event_locations.venue 경로 대응
+            // b.events.event_locations.venue 경로 대응
             event_locations: {
                 venue: res.events.event_locations?.venue || "장소 정보 없음"
             },
@@ -319,9 +319,9 @@ exports.getAttendesByEventId = async (eventId) => {
     // 2. 비즈니스 로직: 프론트엔드가 테이블이나 엑셀로 만들기 편하도록 데이터 구조 평탄화
     return reservations.map(res => ({
         reserveId: res.reservation_id,
-        // 핵심 주석: BigInt 타입은 JSON 직렬화 시 에러가 나므로 toString()으로 안전하게 변환
+        // BigInt 타입은 JSON 직렬화 시 에러가 나므로 toString()으로 안전하게 변환
         memberId: res.member_id.toString(), 
-        // 핵심 주석: MSA 구조상 예매 DB에는 이름/번호가 없으므로 임시 값 매핑 (필요시 User 서비스 통신 필요)
+        // MSA 구조상 예매 DB에는 이름/번호가 없으므로 임시 값 매핑 (필요시 User 서비스 통신 필요)
         name: `회원 ${res.member_id.toString()}`, 
         phone: '번호 확인 불가', 
         status: res.status,
@@ -377,7 +377,7 @@ exports.getTicketStats = async (artistId) => {
  * [상태 폴링] 티켓 코드로 예약 상태 실시간 조회 (checkStatus)
  * =========================================================================
  * 목적: 프론트엔드의 폴링(Polling) API 요청에 대응하여 특정 결제의 성공/실패 여부를 반환함.
- * 🌟 에러 수정: 컨트롤러에서 터지던 prisma 에러를 방지하고자 Repository 전용 함수(getStatusByTicketCode)를 호출.
+ * 컨트롤러에서 터지던 prisma 에러를 방지하고자 Repository 전용 함수(getStatusByTicketCode)를 호출.
  * -------------------------------------------------------------------------
  */
 exports.checkStatus = async (ticketCode) => {
@@ -406,7 +406,7 @@ exports.getPendingRefunds = async () => {
     // 1. DB 조인 쿼리를 통해 환불 데이터와 원본 예약 데이터를 함께 가져옴
     const refunds = await resRepository.findPendingRefunds();
 
-    // 2. 🌟 프론트엔드 AdminRefund.jsx 컴포넌트 구조에 딱 맞게 이름 매핑
+    // 2. 프론트엔드 AdminRefund.jsx 컴포넌트 구조에 딱 맞게 이름 매핑
     return refunds.map(item => ({
         refundId: item.refund_id,
         // reservations 테이블의 ticket_code를 targetId로 통일
@@ -437,10 +437,10 @@ exports.getCompletedRefunds = async () => {
         
         return {
             refundId:    refund?.refund_id || null,
-            targetId:    item.ticket_code,           // ✅ reservations에서 직접 추출
-            memberId:    item.member_id.toString(),  // ✅ 직렬화 에러 방지
+            targetId:    item.ticket_code,           // reservations에서 직접 추출
+            memberId:    item.member_id.toString(),  // 직렬화 에러 방지
             totalPrice:  refund?.refund_amount || item.total_price,
-            title:       item.events.title,          // ✅ 이벤트 이름
+            title:       item.events.title,          // 이벤트 이름
             reason:      refund?.refund_reason || null,
             status:      item.status,
             processedAt: refund?.processed_at || null,
@@ -482,16 +482,16 @@ exports.getDailySalesTrend = async (artistId) => {
         const reservations = await prisma.reservations.findMany({
             where: {
                 events: {
-                    artist_id: BigInt(artistId) // ✅ BigInt 타입 캐스팅 필수
+                    artist_id: BigInt(artistId) // BigInt 타입 캐스팅 필수
                 },
                 booked_at: {
                     gte: startDate // 최근 5일 시작점 이후
                 },
-                status: 'CONFIRMED' // ✅ 확정된 예매만 카운트 (DB 스키마에 맞춰 수정 가능)
+                status: 'CONFIRMED' // 확정된 예매만 카운트 (DB 스키마에 맞춰 수정 가능)
             },
             select: {
                 booked_at: true,
-                ticket_count: true // ✅ 단순 예매 횟수가 아니라 '실제 구매한 티켓 장수' 기준
+                ticket_count: true // 단순 예매 횟수가 아니라 '실제 구매한 티켓 장수' 기준
             }
         });
 
