@@ -16,7 +16,7 @@ exports.getAllEvents = async (req, res) => {
     try {
         const events = await eventRepository.findAllEvents(); // 레포지토리 이름 유지
         
-        // 🚨 여기서 serializeBigInt 사용!
+        // 여기서 serializeBigInt 사용!
         // Prisma가 반환하는 DB의 BigInt 타입 데이터가 JSON으로 파싱될 때 터지는 에러를 방지
         res.status(200).json({ 
             events: serializeBigInt(events) 
@@ -42,7 +42,7 @@ exports.getMyEvents = async (req, res) => {
         
         // 프론트엔드 좌석 UI(Grid)에서 사용하기 편하도록 데이터 평탄화 작업 수행
         const formattedEvents = events.map(event => {
-            // 🌟 selected_seats가 "A1, A2" 문자열일 테니까 배열로 쪼개기
+            // selected_seats가 "A1, A2" 문자열일 테니까 배열로 쪼개기
             const reservedSeats = (event.reservations || []).flatMap(res => {
                 if (typeof res.selected_seats === 'string') {
                     return res.selected_seats.split(',').map(s => s.trim());
@@ -67,7 +67,7 @@ exports.getMyEvents = async (req, res) => {
 
 /**
  * =========================================================================
- * 🌟 BigInt 변환 유틸 (절대 삭제 금지)
+ * BigInt 변환 유틸 (절대 삭제 금지)
  * =========================================================================
  * JSON.stringify가 처리 못하는 BigInt를 문자열로 바꿔줌. 
  * 이거 없으면 Type Error 나면서 서버 응답이 터짐.
@@ -95,7 +95,7 @@ exports.getEventDetail = async (req, res) => {
             event_locations: true,
         };
 
-        // 🌟 중요: memberId가 있을 때만 위시리스트 포함 (false를 넣으면 에러 남!)
+        // 중요: memberId가 있을 때만 위시리스트 포함 (false를 넣으면 에러 남!)
         if (memberId && memberId !== 'undefined' && memberId !== 'null') {
             includeOptions.event_wishlists = {
                 where: { member_id: BigInt(memberId) }
@@ -130,7 +130,7 @@ exports.getEventDetail = async (req, res) => {
         // 3. 찜 여부 판단 (조인된 결과물이 있으면 true)
         const isWishlisted = !!(event.event_wishlists && event.event_wishlists.length > 0);
         
-        // 4. 🌟 BigInt 포함된 객체를 안전하게 변환 (500 에러 방지 핵심)
+        // 4. BigInt 포함된 객체를 안전하게 변환 (500 에러 방지 핵심)
         const responseData = JSON.parse(JSON.stringify({
             ...event,
             isWishlisted,
@@ -229,7 +229,7 @@ const formatToSpring = (dateInput) => {
 
 /**
  * =========================================================================
- * [4] 🌟 공연 등록 신청 (이미지 저장 + 신규 필드 반영) (requestEventApproval)
+ * [4] 공연 등록 신청 (이미지 저장 + 신규 필드 반영) (requestEventApproval)
  * =========================================================================
  * 목적: 아티스트가 신규 공연을 열고 싶을 때 관리자에게 승인을 요청하는 복합 API.
  * 흐름: 폼 데이터/이미지 파싱 -> 정책 산출 -> 다중 DB Insert (트랜잭션) -> MQ로 관리자 서버에 큐 발송
@@ -248,7 +248,7 @@ exports.requestEventApproval = async (req, res) => {
     try {
         console.log("--- 🚀 컨트롤러 요청 도착 ---");
 
-        // 🌟 [핵심 추가] Multer로 업로드된 실제 파일이 있다면 images 배열 맨 앞에 추가!
+        // Multer로 업로드된 실제 파일이 있다면 images 배열 맨 앞에 추가
         // 메인 포스터로 띄우기 위해 무조건 맨 앞(인덱스 0)으로 밀어넣음.
         if (req.file) {
             const uploadedFilename = req.file.filename;
@@ -269,7 +269,7 @@ exports.requestEventApproval = async (req, res) => {
         const lng = coords ? coords.lng : null;
 
         /**
-         * 🌟 [신규 로직] 수수료 및 정산 정책 자동 계산
+         * [신규 로직] 수수료 및 정산 정책 자동 계산
          * 공연장 종류나 관객 규모에 따라 시스템이 자동으로 수수료(%)를 판별함.
          */
         const parsedCapacity = parseInt(total_capacity, 10) || 0;
@@ -297,7 +297,7 @@ exports.requestEventApproval = async (req, res) => {
         };
 
         /**
-         * 2. [핵심 로직] 트랜잭션 처리
+         * 2. 트랜잭션 처리
          * 데이터 무결성을 위해 4개의 연관 테이블을 한 번의 쿼리 사이클로 안전하게 밀어넣음.
          */
         const { newEvent, approvalReq } = await prisma.$transaction(async (tx) => {
@@ -331,7 +331,7 @@ exports.requestEventApproval = async (req, res) => {
                 }
             });
 
-            // (3) 🌟 [신규] 사진 정보 생성 (Bulk Insert)
+            // (3) [신규] 사진 정보 생성 (Bulk Insert)
             if (images && Array.isArray(images) && images.length > 0) {
                 await tx.event_images.createMany({
                     data: images.map((url, index) => ({
@@ -349,7 +349,7 @@ exports.requestEventApproval = async (req, res) => {
                     event_id: createdEvent.event_id,
                     requester_id: BigInt(finalRequesterId),
                     status: 'PENDING',
-                    event_snapshot: eventSnapshot // 🌟 스키마 필수 조건 만족!
+                    event_snapshot: eventSnapshot // 스키마 필수 조건 만족!
                 }
             });
 
@@ -384,9 +384,9 @@ exports.requestEventApproval = async (req, res) => {
             imageUrl: (images && images.length > 0) 
                 ? (images[0].startsWith('http') 
                     ? images[0] 
-                    : `/images/res/${images[0]}`) // 👈 앞에 도메인 싹 빼고 상대 경로만!
+                    : `/images/res/${images[0]}`) // 앞에 도메인 싹 빼고 상대 경로
                 : null,
-            // 🌟 2. [추가] 예매 오픈/종료 시간 & 총 좌석 수 
+            // 2. [추가] 예매 오픈/종료 시간 & 총 좌석 수 
             eventStartDate: formatToSpring(open_time || new Date()), // 예매 시작
             eventEndDate: formatToSpring(close_time || new Date()),  // 예매 종료
             totalCapacity: parsedCapacity                              // 좌석표 계산용
@@ -549,7 +549,7 @@ exports.getEventsList = async (req, res) => {
     });
 
     // 2. BigInt 직렬화 및 프론트엔드 변수명 매핑
-    // 핵심 주석: Prisma의 BigInt는 JSON.stringify 시 에러가 발생하므로 toString()으로 변환 필수.
+    // Prisma의 BigInt는 JSON.stringify 시 에러가 발생하므로 toString()으로 변환 필수.
     // 프론트엔드(e.artistId)에서 쉽게 비교할 수 있도록 변수명을 카멜케이스로 하나 더 매핑해서 전달함.
     const serializedEvents = events.map((event) => {
       const artistIdStr = event.artist_id ? event.artist_id.toString() : null;
