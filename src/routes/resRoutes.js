@@ -12,7 +12,7 @@ const testController = require('../controllers/testController');
 // [파일 저장 설정]
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // 핵심 주석: 리눅스(도커) 환경에서는 외부 볼륨과 연결된 컨테이너 내부 경로(/app/public/images/res)를 사용
+        // 리눅스(도커) 환경에서는 외부 볼륨과 연결된 컨테이너 내부 경로(/app/public/images/res)를 사용
         const dir = process.platform === 'win32' 
             ? path.join(process.cwd(), 'uploads') // 윈도우: 로컬 개발용
             : (process.env.UPLOAD_DIR || '/app/public/images/res'); // 리눅스(도커): 환경변수 우선, 없으면 기본 볼륨 경로
@@ -42,12 +42,12 @@ router.get('/events/my', eventController.getMyEvents);
 
 // [GET] 특정 이벤트 상세 정보 조회 (Booking Process 진입 시 필요할 수 있음)
 // 예: http://localhost:8082/events/:eventId
-router.get('/events/:eventId', eventController.getEventDetail); // 👈 eventController로 변경
+router.get('/events/:eventId', eventController.getEventDetail);
 
 // [GET] 유저아티스트페이지 이벤트 카운트
 router.get('/eventsList', eventController.getEventsList);
 
-// ✅ 위시리스트 (여기에 추가)
+// 위시리스트
 router.get('/wishlist', eventController.getMyWishlist);
 router.post('/events/:eventId/wishlist', eventController.addWishlist);
 router.delete('/events/:eventId/wishlist', eventController.removeWishlist);
@@ -55,11 +55,11 @@ router.delete('/events/:eventId/wishlist', eventController.removeWishlist);
 // [POST] 유저대시보드 
 router.post('/dashboard/dashboard-queue', eventController.sendDashboardQueues);
 
-// [GET]📍 공연 정보/지도 관련
+// [GET] 공연 정보/지도 관련
 router.get('/events/:eventId/location', eventController.getEventLocation);
 
-// [POST] 🌟 새로운 공연 등록 (Redis 동기화 로직 포함된 버전)
-// 프런트엔드에서 보낸 'file' 필드를 해석하여 지정된 경로에 저장합니다.
+// [POST] 새로운 공연 등록 (Redis 동기화 로직 포함된 버전)
+// 프런트엔드에서 보낸 'file' 필드를 해석하여 지정된 경로에 저장
 router.post('/events', upload.single('file'), eventController.requestEventApproval);
 
 
@@ -67,7 +67,7 @@ router.post('/events', upload.single('file'), eventController.requestEventApprov
 router.post('/reserve', resController.createReservation);
 
 // [GET] 특정 유저의 예약 상태 확인 (프론트엔드 폴링 주소와 일치시킴)
-// 🌟 /reserve/status/:userId 를 아래와 같이 변경
+// /reserve/status/:userId 를 아래와 같이 변경
 router.get('/reservations/status/:ticketCode', resController.getReservationStatus);
 
 // [POST] 사용자 직접 환불 요청
