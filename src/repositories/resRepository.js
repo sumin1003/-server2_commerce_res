@@ -7,7 +7,7 @@
  * 담당: Prisma를 이용한 예약 관련 PostgreSQL(Server 1) 데이터 제어
  * 목적: Service 계층에서 DB 라이브러리(Prisma) 의존성을 완벽히 분리하기 위함.
  */
-// ✅ 공용 설정을 불러오기만 하면 끝! (전역 커넥션 풀 사용)
+// 공용 설정을 불러오기만 하면 끝 (전역 커넥션 풀 사용)
 const prisma = require('../config/prisma');
 
 /**
@@ -61,7 +61,7 @@ exports.createReservationWithTransaction = async (data) => {
             }
         });
 
-        // 핵심 주석: Prisma 트랜잭션 성공 시 자동 COMMIT, 에러 발생 시 자동 ROLLBACK
+        // Prisma 트랜잭션 성공 시 자동 COMMIT, 에러 발생 시 자동 ROLLBACK
         return reservation;
     });
 };
@@ -122,7 +122,7 @@ exports.findReservationByCode = async (ticket_code) => {
 };
 
 /**
- * 2. [수정] 환불 확정 및 좌석 복구 (트랜잭션)
+ * 2. 환불 확정 및 좌석 복구 (트랜잭션)
  * 어드민 서버(Java)에서 환불 승인이 완료되었다는 메시지(MQ)를 받았을 때 실행됨.
  */
 exports.completeRefund = async (ticket_code, event_id, ticket_count) => {
@@ -170,17 +170,17 @@ exports.findReservationsByMemberId = async (memberId) => {
                 include: {
                     event_locations: true, // venue, address 포함
                     event_images: {
-                        where: { image_role: 'POSTER' }, // 🌟 스키마에 정의된 'POSTER' 역할의 이미지만!
+                        where: { image_role: 'POSTER' },
                         take: 1 // 포스터 1장만 가져오기
                     }
                 }
             }
         },
-        orderBy: { booked_at: 'desc' } // 🌟 스키마의 booked_at(예매일시) 기준 최신순 정렬
+        orderBy: { booked_at: 'desc' } // 스키마의 booked_at(예매일시) 기준 최신순 정렬
     });
 };
 
-// 🌟 핵심: 특정 이벤트의 예매자 데이터만 DB에서 순수하게 조회 (아티스트 명단 다운로드용)
+// 특정 이벤트의 예매자 데이터만 DB에서 순수하게 조회 (아티스트 명단 다운로드용)
 exports.findReservationsByEventId = async (eventId) => {
     // 결제까지 완벽히 끝난(CONFIRMED) 확정 명단만 조회함
     return await prisma.reservations.findMany({
@@ -202,7 +202,7 @@ exports.findReservationsByEventId = async (eventId) => {
 exports.getRecentReservationsByArtist = async (artistId, startDate) => {
   return await prisma.reservations.findMany({
     where: {
-      events: { // 🚨 여기! event를 events로 수정 완료
+      events: { 
         artist_id: BigInt(artistId) 
       },
       booked_at: {
@@ -231,7 +231,7 @@ exports.getStatusByTicketCode = async (ticketCode) => {
      */
     return await prisma.reservations.findUnique({
         where: { ticket_code: ticketCode },
-        select: { status: true } // 🌟 성능 최적화 핵심
+        select: { status: true } //성능 최적화 핵심
     });
 };
 
@@ -253,15 +253,15 @@ exports.findPendingRefunds = async () => {
 
 // [어드민 환불완료 전체 조회]
 exports.findCompletedRefunds = async () => {
-    // (네 원본 코드 유지) 이미 파일 상단에 prisma가 선언되어 있지만, 기존 코드 존중을 위해 놔둠.
+    // 이미 파일 상단에 prisma가 선언되어 있지만, 기존 코드 존중을 위해 놔둠.
     const prisma = require('../config/prisma');
     
-    // ✅ reservations(예약 원본) 기준으로 이미 상태가 REFUNDED로 바뀐 내역들을 조회함
+    // reservations(예약 원본) 기준으로 이미 상태가 REFUNDED로 바뀐 내역들을 조회함
     return await prisma.reservations.findMany({
         where: { status: 'REFUNDED' },
         include: {
             events: true, // 공연 정보 포함
-            reservation_refunds: {   // ✅ 환불 사유/처리일(히스토리) 가져오기
+            reservation_refunds: {   // 환불 사유/처리일(히스토리) 가져오기
                 orderBy: { processed_at: 'desc' }, // 가장 마지막에 처리된 환불 내역 기준
                 take: 1
             }
@@ -271,7 +271,7 @@ exports.findCompletedRefunds = async () => {
 };
 
 /**
- * 🚨 [추가] 치명적 에러 방지용 함수
+ * 치명적 에러 방지용 함수
  * resService.js의 prepareRefundAdminRequest가 호출할 수 있도록 반드시 필요함!
  */
 exports.createRefundAdminRequest = async (reservationId, memberId, refundAmount, refundReason) => {
